@@ -24,7 +24,6 @@ import com.example.myapp.dto.SalaryInfoDTO;
 import com.example.myapp.entity.SyainKeireki;
 import com.example.myapp.entity.SyainKyuyo;
 import com.example.myapp.entity.SyainMain;
-import com.example.myapp.service.SyainKoushinService;
 import com.example.myapp.service.SyainMainService;
 import com.example.myapp.service.SyainTourokuService;
 import com.example.myapp.utils.JsonUtils;
@@ -45,10 +44,7 @@ public class FeaturesController {
 	
 	@Autowired
 	SyainTourokuService syainTourokuService;
-	
-	@Autowired
-	SyainKoushinService syainKoushinService;
-	
+		
 	
 	@GetMapping("/searchEmployee")
 	@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true", allowedHeaders = "*")
@@ -130,11 +126,16 @@ public class FeaturesController {
 		}
 	}
 	
+	@PostMapping("/syainKoushin")
+	public ResponseEntity<String> syainKoushin(HttpServletRequest request) {
+		return ResponseEntity.ok().body("syain koushin");
+	}
+	
 	@GetMapping("/selectSyainBySyainId")
 	@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true", allowedHeaders = "*")
 	public ResponseEntity<SyainMainKyuyoKeirekiVO> selectSyainBySyainId(@RequestParam(value = "syainId", required = false) Integer syainId) {
 		log.info("[社員検索], syainId: {}", syainId);
-		SyainMainKyuyoKeirekiVO syainVO = syainKoushinService.selectSyainBySyainId(syainId);
+		SyainMainKyuyoKeirekiVO syainVO = syainTourokuService.selectSyainBySyainId(syainId);
 		return ResponseEntity.ok().body(syainVO);
 	}
 

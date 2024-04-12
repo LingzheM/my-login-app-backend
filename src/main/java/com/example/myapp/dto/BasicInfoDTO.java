@@ -24,6 +24,11 @@ public class BasicInfoDTO {
 	public static class EmployeeNameKanji {
 		private String firstName;
 		private String lastName;
+		
+		public EmployeeNameKanji() {
+			
+		}
+		
 		public EmployeeNameKanji(String firstNameKanji, String lastNameKanji) {
 			this.firstName = firstNameKanji;
 			this.lastName = lastNameKanji;
@@ -51,6 +56,10 @@ public class BasicInfoDTO {
 	public static class EmployeeNameKatakana {
 		private String firstName;
 		private String lastName;
+		
+		public EmployeeNameKatakana() {
+			
+		}
 		public EmployeeNameKatakana(String firstNameKana, String lastNameKana) {
 			this.firstName = firstNameKana;
 			this.lastName = lastNameKana;
@@ -77,6 +86,11 @@ public class BasicInfoDTO {
 	public static class EmployeeNameEnglish {
 		private String firstName;
 		private String lastName;
+		
+		public EmployeeNameEnglish() {
+			
+		}
+		
 		public EmployeeNameEnglish(String firstNameEigo, String lastNameEigo) {
 			this.firstName = firstNameEigo;
 			this.lastName = lastNameEigo;

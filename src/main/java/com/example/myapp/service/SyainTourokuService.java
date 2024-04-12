@@ -2,15 +2,22 @@ package com.example.myapp.service;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.myapp.dto.BasicInfoDTO;
+import com.example.myapp.dto.BasicInfoDTO.EmployeeNameEnglish;
+import com.example.myapp.dto.BasicInfoDTO.EmployeeNameKanji;
+import com.example.myapp.dto.BasicInfoDTO.EmployeeNameKatakana;
 import com.example.myapp.dto.ContractInfoDTO;
 import com.example.myapp.dto.ExperienceInfoDTO;
 import com.example.myapp.dto.ExperienceInfoDTO.ExperienceHistory;
@@ -28,6 +35,7 @@ import com.example.myapp.mapper.SyainKeirekiRepository;
 import com.example.myapp.mapper.SyainKyuyoRepository;
 import com.example.myapp.mapper.SyainMainRepository;
 import com.example.myapp.mapper.SyainRirekiRepository;
+import com.example.myapp.vo.SyainMainKyuyoKeirekiVO;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,6 +57,23 @@ public class SyainTourokuService {
 	@Autowired
 	private SyainKyuyoRepository syainKyuyoRepository;
 	
+	public SyainMainKyuyoKeirekiVO selectSyainBySyainId(int syainId) {
+		SyainMainKyuyoKeirekiVO syainVO = new SyainMainKyuyoKeirekiVO();
+		Optional<SyainMain> syainMain = syainMainRepository.findById(syainId);
+		if (syainMain.isPresent()) {
+			SyainMain existingSyainMain = syainMain.get();
+			syainVO.setBasicInfo(convertSyainMainToBasicInfoDTO(existingSyainMain));
+			syainVO.setPersonalInfo(convertSyainMainToPersonalInfoDTO(existingSyainMain));
+			syainVO.setKaishaInfo(convertSyainMainToKaishaInfoDTO(existingSyainMain));
+			syainVO.setContractInfo(convertSyainMainToContractInfoDTO(existingSyainMain));
+			syainVO.setHomeCountryInfo(convertSyainMainToHomeCountryInfoDTO(existingSyainMain));
+			syainVO.setGraduationInfo(convertSyainMainToGraduationInfoDTO(existingSyainMain));
+			syainVO.setSalaryInfo(convertSyainMainToSalaryInfoDTO(existingSyainMain));
+			syainVO.setExperienceInfo(convertSyainMainToExperienceInfoDTO(existingSyainMain));
+		}
+		return syainVO;
+	}
+	
 	@Transactional
 	public void saveSyainTouroku(SyainMain syainmain, 
 			List<SyainKeireki> syainKeirekiList,
@@ -66,6 +91,28 @@ public class SyainTourokuService {
 		syainRirekiRepository.count();
 		log.info("[社員登録] すべての登録が完了");
 
+	}
+	
+	@Transactional
+	public void updateSyainTouroku(SyainMain syainMain,
+			List<SyainKeireki> syainKeirekiList,
+			List<SyainKyuyo> syainKyuyoList) {
+		log.info("[更新　社員メイン]");
+		Optional<SyainMain> existingSyainMain = syainMainRepository.findById(syainMain.getSyainId());
+		if (existingSyainMain.isPresent()) {
+			syainMainRepository.save(syainMain);
+		} else {
+			log.error("[不存在]");
+		}
+		log.info("[更新　社員経歴]");
+		for (SyainKeireki syainKeireki: syainKeirekiList) {
+			syainKeirekiRepository.save(syainKeireki);
+		}
+		log.info("[更新　社員給与]");
+		for (SyainKyuyo syainKyuyo: syainKyuyoList) {
+			syainKyuyoRepository.save(syainKyuyo);
+		}
+		log.info("[社員更新]　全ての更新が完了");
 	}
 	
 
@@ -335,5 +382,181 @@ public class SyainTourokuService {
             return new Date(); // 或者根据你的错误处理策略抛出一个异常
         }
     }
+    
+    public BasicInfoDTO convertSyainMainToBasicInfoDTO(SyainMain syainMain) {
+		BasicInfoDTO basicInfoDTO = new BasicInfoDTO();
+		// 社員コード
+		basicInfoDTO.setEmployeeCode(syainMain.getEmployeeCode());
+		//　社員名漢字
+		basicInfoDTO.setNameKanji(new EmployeeNameKanji(syainMain.getFirstNameKanji(), syainMain.getLastNameKanji()));
+		//　社員名カタ
+		basicInfoDTO.setNameKatagana(new EmployeeNameKatakana(syainMain.getFirstNameKana(), syainMain.getLastNameKana()));
+		//　社員名英語
+		basicInfoDTO.setNameEnglish(new EmployeeNameEnglish(syainMain.getFirstNameEigo(), syainMain.getLastNameEigo()));
+		// 性別
+		basicInfoDTO.setGender(syainMain.getSeibetu());
+		//　誕生日
+		basicInfoDTO.setBirthDate(convertDateToDisplayForm(syainMain.getTanjyobi()));
+		//　国籍
+		basicInfoDTO.setNationallity(syainMain.getKokuseki());
+		//　出身地
+		basicInfoDTO.setPlaceOfBirth(syainMain.getSyussinn());
+		//　配偶
+		basicInfoDTO.setSpousePresent(syainMain.getHaigusya());
+		return basicInfoDTO;
+	}
+    
+    public PersonalInfoDTO convertSyainMainToPersonalInfoDTO(SyainMain syainMain) {
+    	PersonalInfoDTO personalInfo = new PersonalInfoDTO();
+    	// パスポート番号
+    	personalInfo.setPassportNumber(syainMain.getPassportNum());
+    	// パスポート有効日
+    	personalInfo.setPassportExpiryDate(convertDateToDisplayForm(syainMain.getPassportEndDate()));
+    	// ビザ期間
+    	personalInfo.setVisaDuration(syainMain.getVisaKikan());
+    	// ビザ有効日
+    	personalInfo.setVisaExpiryDate(convertDateToDisplayForm(syainMain.getVisaEndDate()));
+    	// 在留資格
+    	personalInfo.setResidenceStatus(syainMain.getZairyuSikaku()+"");
+    	// マイナンバー
+    	personalInfo.setMyNumber(syainMain.getKojinNum());
+    	// 在留番号
+    	personalInfo.setResidenceNumber(syainMain.getZairyuNum());
+    	return personalInfo;
+    }
+    
+    public KaishaInfoDTO convertSyainMainToKaishaInfoDTO(SyainMain syainMain) {
+    	KaishaInfoDTO kaishaInfo = new KaishaInfoDTO();
+    	// 所属会社
+    	kaishaInfo.setCompany(""+syainMain.getSyozokuKaisya());
+    	// 入社日
+    	kaishaInfo.setJoinDate(convertDateToDisplayForm(syainMain.getNyusyaDate()));
+    	// 退社日
+    	kaishaInfo.setLeaveDate(convertDateToDisplayForm(syainMain.getTaisyaDate()));
+    	// 職業種類
+    	kaishaInfo.setOccupationType(""+syainMain.getSyokugyoKind());
+    	// 来日時期
+    	kaishaInfo.setArrivalDateInJapan(convertDateToDisplayForm(syainMain.getRainitiDate()));
+    	// 備考
+    	kaishaInfo.setRemarks(syainMain.getBikou());
+    	return kaishaInfo;
+    }
+    
+    public ContractInfoDTO convertSyainMainToContractInfoDTO(SyainMain syainMain) {
+    	ContractInfoDTO contractInfo = new ContractInfoDTO();
+    	// 日本の郵
+    	contractInfo.setAddressZip(syainMain.getYuubin());
+    	// 日本の住所１
+    	contractInfo.setAddressStreet(syainMain.getJyusyo1());
+    	// 日本の住所２
+    	contractInfo.setAddressDetails(syainMain.getJyusyo2());
+    	// 最寄り駅
+    	contractInfo.setNearestStation(syainMain.getMoyoriEki());
+    	// 携帯電話
+    	contractInfo.setPhoneNumber(syainMain.getTel());
+    	// メールアドレス
+    	contractInfo.setEmail(syainMain.getEmail());
+    	// WECHAT
+    	contractInfo.setWechatId(syainMain.getWechat());
+    	// Line
+    	contractInfo.setLineId(syainMain.getLine());
+    	return contractInfo;
+    }
+    
+    public HomeCountryInfoDTO convertSyainMainToHomeCountryInfoDTO(SyainMain syainMain) {
+    	HomeCountryInfoDTO homeCountryInfo = new HomeCountryInfoDTO();
+    	// 母国の住所
+    	homeCountryInfo.setHomeCountryAddress(syainMain.getBokokuJyusyo());
+    	// 母国の緊急連絡先
+    	homeCountryInfo.setEmergencyContact(syainMain.getBokokuKinnkyuuRennraku());
+    	return homeCountryInfo;
+    }
+    
+    public GraduationInfoDTO convertSyainMainToGraduationInfoDTO(SyainMain syainMain) {
+    	GraduationInfoDTO graduationInfo = new GraduationInfoDTO();
+    	//　最終学歴
+    	graduationInfo.setHighestEducation(""+syainMain.getSaisyuuGakureki());
+    	//　学校名
+    	graduationInfo.setSchoolName(syainMain.getGakkouName());
+    	//　専門名
+    	graduationInfo.setMajor(syainMain.getSennmomName());
+    	// 　卒業年月日
+    	graduationInfo.setGraduationDate(convertDateToDisplayForm(syainMain.getSotugyoDate()));
+    	return graduationInfo;
+    }
+    
+    public SalaryInfoDTO convertSyainMainToSalaryInfoDTO(SyainMain syainMain) {
+    	SalaryInfoDTO salaryInfo = new SalaryInfoDTO();
+    	BankInfo bankInfo = new BankInfo();
+    	// 金融機関コード
+    	bankInfo.setBankCode(syainMain.getKinyukikanCode());
+    	// 金融機関名
+    	bankInfo.setBankName(syainMain.getKinyukikanName());
+    	// 支店コード
+    	bankInfo.setBranchCode(syainMain.getSitenCode());
+    	// 支店名
+    	bankInfo.setBranchName(syainMain.getSitenName());
+    	// 口座種類
+    	bankInfo.setAccountType(syainMain.getKouzaKind().toString());
+    	// 口座番号
+    	bankInfo.setAccountNumber(syainMain.getKouzaNum());
+    	// 名義人
+    	bankInfo.setAccountHolderName(syainMain.getMeigiName());
+    	// bankInfo
+    	salaryInfo.setBankInfo(bankInfo);
+    	// syainId
+    	int syainId = syainMain.getSyainId();
+    	List<SyainKyuyo> syainKyuyoList = syainKyuyoRepository.findBySyainId(syainId);
+    	List<SalaryHistory> salaryHistoryList = new ArrayList<>(syainKyuyoList.size());
+    	for (SyainKyuyo syainKyuyo : syainKyuyoList) {
+    		SalaryHistory salaryHistory = new SalaryHistory();
+    		// 開始年月
+    		salaryHistory.setStartMonth(syainKyuyo.getKaishiNengetsu());
+    		// 終了年月
+    		salaryHistory.setEndMonth(syainKyuyo.getSyuryoNengetsu());
+    		// 基本給
+    		salaryHistory.setBasicSalary(syainKyuyo.getKihonkyu());
+    		// 職能給
+    		salaryHistory.setSkillSalary(syainKyuyo.getSyokunokyu());
+    		// 雇用保険番号
+    		salaryHistory.setEmploymentInsuranceNumber(syainKyuyo.getKokyouHokenNo());
+    		// 年金番号
+    		salaryHistory.setPensionNumber(syainKyuyo.getNankinNo());
+    		// 年金基準
+    		salaryHistory.setPensionBaseAmount(syainKyuyo.getNankinKiJyunGaku());
+    		// 健康保険番号
+    		salaryHistory.setHealthInsuranceNumber(syainKyuyo.getKenkouHokenNo());
+    		// 備考
+    		salaryHistory.setRemark(syainKyuyo.getBikou());
+    		salaryHistoryList.add(salaryHistory);
+    	}
+    	return salaryInfo;
+    }
+    
+    public ExperienceInfoDTO convertSyainMainToExperienceInfoDTO(SyainMain syainMain) {
+    	int syainId = syainMain.getSyainId();
+    	List<SyainKeireki> syainKeirekiList = syainKeirekiRepository.findBySyainId(syainId);
+    	ExperienceInfoDTO experienceInfo = new ExperienceInfoDTO();
+    	List<ExperienceHistory> experienceHistoryList = new ArrayList<>();
+    	for (SyainKeireki syainKeireki : syainKeirekiList) {
+    		ExperienceHistory experienceHistory = new ExperienceHistory();
+    		experienceHistory.setStartTime(convertDateToDisplayForm(syainKeireki.getKaisibi()));
+    		experienceHistoryList.add(experienceHistory);
+    	}
+    	return experienceInfo;
 
+    }
+     
+    public static String convertDateToDisplayForm(Date date) {
+    	// 转换 java.util.Date 到 java.time.LocalDate
+    	if (date == null) {
+    		return "2020-01-01";
+    	}
+    	LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+    	// 使用 DateTimeFormatter 格式化 LocalDate
+    	String formattedDate = localDate.format(DateTimeFormatter.ISO_LOCAL_DATE); // 格式为 YYYY-MM-DD
+    	return formattedDate;
+
+    }
 }
