@@ -1,6 +1,6 @@
 package com.example.myapp.vo;
 
-public class CustomerInformationVO {
+public class CustomerInfoVO {
 
 	private int id;
 	
